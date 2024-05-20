@@ -1,7 +1,12 @@
 package com.example.visverbum;
 
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 
+import com.example.visverbum.service.ToolbarActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -20,6 +25,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+
+
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
@@ -34,4 +41,17 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupWithNavController(binding.navView, navController);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        String packageName = "com.example.visverbum";  // Get your app's package name
+        String className = "com.example.visverbum.service.ToolbarActivity";  // Replace with your activity class name
+        ComponentName componentName = new ComponentName(packageName, className);
+        PackageManager packageManager = getPackageManager();
+        packageManager.setComponentEnabledSetting(componentName, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
+        SharedPreferences sharedPref = getSharedPreferences("SERVICE_ACTIVE", Context.MODE_PRIVATE);
+        SharedPreferences.Editor SPeditor = sharedPref.edit();
+        SPeditor.putBoolean("SERVICE_ACTIVE", false);
+        SPeditor.apply();
+    }
 }

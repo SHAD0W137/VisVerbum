@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">VisVerbum</string>
-    <string name="title_home">Home</string>
-    <string name="title_dashboard">Dashboard</string>
-    <string name="title_notifications">Notifications</string>
+    <string name="title_home">Welcome to VisVerbum</string>
+    <string name="title_dashboard">Search History</string>
+    <string name="title_notifications">Options</string>
+    <string name="define_toolbar">Define</string>
 </resources>
