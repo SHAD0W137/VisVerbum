@@ -13,6 +13,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.PixelFormat;
 import android.os.Build;
 import android.os.Handler;
@@ -31,6 +32,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.example.visverbum.R;
+import com.google.firebase.analytics.FirebaseAnalytics;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -55,12 +59,15 @@ public class WordDefinitionService extends Service{
     private View definitionView;
     public String selectedWord;
     String definitions_answer;
+    static String userId;
 
     List<String> list = new ArrayList<>();
-    Handler mainHandler, h, errorHandler;
+    Handler mainHandler, h, errorHandler, getIdHandler;
 
     @Override
     public void onCreate() {
+        SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("FirebaseId", Context.MODE_PRIVATE);
+        userId = sharedPref.getString("FirebaseId", "");
         h = new Handler(getApplicationContext().getMainLooper()){
             @Override
             public void handleMessage(@NonNull Message msg) {
@@ -210,10 +217,11 @@ public class WordDefinitionService extends Service{
     }
 
     public static void putList(String word, Context context) throws IOException {
-        File file = new File(context.getCacheDir(), "wordlist.txt");
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, true))) {
-            writer.append(word + "\n");
-        }
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef = database.getReference("wordlist").child(userId);
+
+        String key = myRef.push().getKey();
+        myRef.child(key).setValue(word);
     }
 
 }

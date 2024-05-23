@@ -16,7 +16,7 @@
         android:textColor="@color/white"
         android:textSize="18sp"
         android:textStyle="bold"
-        android:background="@color/red_main"
+        android:background="@color/grey"
         />
 
     <TextView
@@ -37,7 +37,7 @@
         android:text="CLOSE"
         android:textColor="@android:color/white"
         android:textStyle="bold"
-        android:background="@color/red_main"
+        android:background="@color/grey"
         android:textSize="18sp" />
 
 </LinearLayout>

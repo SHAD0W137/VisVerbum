@@ -8,6 +8,8 @@
         android:layout_width="match_parent"
         android:layout_height="40dp"
         android:text="Clear"
+        android:background="@color/red_main"
+        android:backgroundTint="@color/red_main"
         ></Button>
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv"
