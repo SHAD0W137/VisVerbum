@@ -4,4 +4,5 @@
     <string name="title_dashboard">Search History</string>
     <string name="title_notifications">Options</string>
     <string name="define_toolbar">Define</string>
+    <string name="search_definition">Search</string>
 </resources>

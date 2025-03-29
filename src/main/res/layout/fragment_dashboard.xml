@@ -3,17 +3,9 @@
     android:layout_width="match_parent"
     android:orientation="vertical"
     android:layout_height="match_parent">
-    <Button
-        android:id="@+id/clear_button"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:text="Clear"
-        android:background="@color/red_main"
-        android:backgroundTint="@color/red_main"
-        ></Button>
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content">
     </androidx.recyclerview.widget.RecyclerView>
 </LinearLayout>

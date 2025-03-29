@@ -54,19 +54,7 @@ public class DashboardFragment extends Fragment {
 
 
         View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
-        Button clear_but = (Button) view.findViewById(R.id.clear_button);
 
-
-        clear_but.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    clearList(getContext(), view);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
         h = new Handler(getContext().getMainLooper()) {
             @Override
             public void handleMessage(@NonNull Message msg) {
