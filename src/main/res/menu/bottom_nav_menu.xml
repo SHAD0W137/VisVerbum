@@ -11,6 +11,11 @@
         android:title="History" />
 
     <item
+        android:id="@+id/navigation_wordtest"
+        android:icon="@drawable/ic_notifications_black_24dp"
+        android:title="Options" />
+
+    <item
         android:id="@+id/navigation_notifications"
         android:icon="@drawable/ic_notifications_black_24dp"
         android:title="Options" />
