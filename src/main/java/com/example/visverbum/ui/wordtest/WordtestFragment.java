@@ -1,27 +1,23 @@
-package com.example.visverbum.ui.notifications;
+package com.example.visverbum.ui.wordtest;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider;
 
-import com.example.visverbum.databinding.FragmentNotificationsBinding;
+import com.example.visverbum.databinding.FragmentWordtestBinding;
 
-public class NotificationsFragment extends Fragment {
+public class WordtestFragment extends Fragment {
 
-    private FragmentNotificationsBinding binding;
+    private FragmentWordtestBinding binding;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        NotificationsViewModel notificationsViewModel =
-                new ViewModelProvider(this).get(NotificationsViewModel.class);
 
-        binding = FragmentNotificationsBinding.inflate(inflater, container, false);
+        binding = FragmentWordtestBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
         return root;

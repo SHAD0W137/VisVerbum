@@ -16,6 +16,7 @@
         android:src="@drawable/logo"/>
 
     <Button
+        android:padding="15dp"
         android:id="@+id/main_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

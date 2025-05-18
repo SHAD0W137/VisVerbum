@@ -32,13 +32,10 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
             super(itemView);
             itemTextView = (TextView) itemView.findViewById(R.id.element_word);
             defineButton = (Button) itemView.findViewById(R.id.element_define);
-            defineButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent intent = new Intent(Intent.ACTION_VIEW);
-                    intent.setData(Uri.parse("https://www.google.com/search?q=define+" + itemTextView.getText()));
-                     itemTextView.getContext().startActivity(intent);
-                }
+            defineButton.setOnClickListener(v -> {
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setData(Uri.parse("https://www.google.com/search?q=define+" + itemTextView.getText()));
+                 itemTextView.getContext().startActivity(intent);
             });
         }
     }
