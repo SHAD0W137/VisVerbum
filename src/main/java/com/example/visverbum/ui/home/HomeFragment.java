@@ -28,7 +28,6 @@ import com.example.visverbum.service.FloatingButtonService;
 import com.example.visverbum.service.TextAccessibilityService;
 
 import java.util.List;
-import java.util.Objects;
 
 public class HomeFragment extends Fragment {
     private static final String TAG = "HomeFragment";
@@ -66,17 +65,18 @@ public class HomeFragment extends Fragment {
         PackageManager packageManager = requireActivity().getPackageManager();
         if (shouldBeActive) {
             if (!checkOverlayPermission()) {
+                Toast.makeText(requireContext(), getString(R.string.please_enable_on_top), Toast.LENGTH_LONG).show();
                 requestOverlayPermission();
                 return;
             }
             if (!isAccessibilityServiceEnabled(requireContext(), TextAccessibilityService.class)) {
-                Toast.makeText(requireContext(), "Пожалуйста, включите VisVerbum Accessibility Service", Toast.LENGTH_LONG).show();
+                Toast.makeText(requireContext(), getString(R.string.please_enable_accessibility), Toast.LENGTH_LONG).show();
                 Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
                 startActivity(intent);
                 return;
             }
             if (!NotificationManagerCompat.from(requireContext()).areNotificationsEnabled()) {
-                Toast.makeText(requireContext(), "Пожалуйста, включите уведомления для VisVerbum", Toast.LENGTH_LONG).show();
+                Toast.makeText(requireContext(), getString(R.string.please_enable_notifications), Toast.LENGTH_LONG).show();
                 Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
                         .putExtra(Settings.EXTRA_APP_PACKAGE, requireContext().getPackageName());
                 startActivity(intent);
@@ -99,9 +99,9 @@ public class HomeFragment extends Fragment {
                 isAccessibilityServiceEnabled(requireContext(), TextAccessibilityService.class) &&
                 checkOverlayPermission() &&
                 NotificationManagerCompat.from(requireContext()).areNotificationsEnabled()) {
-            mainButton.setText("VISVERBUM IS ACTIVE");
+            mainButton.setText(R.string.visverbum_is_active);
         } else {
-            mainButton.setText("VISVERBUM IS INACTIVE");
+            mainButton.setText(R.string.visverbum_is_inactive);
         }
     }
 
@@ -175,7 +175,7 @@ public class HomeFragment extends Fragment {
             if (Settings.canDrawOverlays(requireContext())) {
                 updateButtonState();
             } else {
-                Toast.makeText(requireContext(), "Разрешение наложения не предоставлено.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), requireContext().getString(R.string.can_t_display_on_top), Toast.LENGTH_SHORT).show();
             }
         }
     }

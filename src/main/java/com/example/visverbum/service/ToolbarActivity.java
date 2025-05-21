@@ -10,9 +10,9 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
+import com.example.visverbum.R;
+
 public class ToolbarActivity extends Activity {
-    boolean is_active;
-    Activity tbActivity = this;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -22,7 +22,7 @@ public class ToolbarActivity extends Activity {
         if (text != null) {
             startWordDefinitionService(text.toString());
         } else {
-            Toast.makeText(this, "No text selected", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.no_text_selected), Toast.LENGTH_SHORT).show();
         }
 
         finish();

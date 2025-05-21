@@ -1,5 +1,6 @@
 package com.example.visverbum.auth;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -12,10 +13,10 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.visverbum.LocaleHelper;
 import com.example.visverbum.MainActivity;
 import com.example.visverbum.R;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -24,14 +25,14 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthCredential;
-import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+
+import java.util.Objects;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -39,13 +40,15 @@ public class LoginActivity extends AppCompatActivity {
     private static final int RC_SIGN_IN = 9001; // Request code for Google Sign In
 
     private TextInputEditText etLoginEmail, etLoginPassword;
-    private Button btnLogin;
-    private SignInButton btnGoogleSignIn;
-    private TextView tvGoToRegister;
     private ProgressBar progressBarLogin;
 
     private FirebaseAuth mAuth;
     private GoogleSignInClient mGoogleSignInClient;
+
+    @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(LocaleHelper.setLocale(newBase));
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,14 +59,14 @@ public class LoginActivity extends AppCompatActivity {
 
         etLoginEmail = findViewById(R.id.etLoginEmail);
         etLoginPassword = findViewById(R.id.etLoginPassword);
-        btnLogin = findViewById(R.id.btnLogin);
-        btnGoogleSignIn = findViewById(R.id.btnGoogleSignIn);
-        tvGoToRegister = findViewById(R.id.tvGoToRegister);
+        Button btnLogin = findViewById(R.id.btnLogin);
+        SignInButton btnGoogleSignIn = findViewById(R.id.btnGoogleSignIn);
+        TextView tvGoToRegister = findViewById(R.id.tvGoToRegister);
         progressBarLogin = findViewById(R.id.progressBarLogin);
 
         // Configure Google Sign In
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(getString(R.string.default_web_client_id)) // google-services.json (web_client_id)
+                .requestIdToken(getString(R.string.default_web_client_id))
                 .requestEmail()
                 .build();
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
@@ -82,29 +85,27 @@ public class LoginActivity extends AppCompatActivity {
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null) {
             updateUI(currentUser);
+        } else {
+            Log.d(TAG, "No user signed in.");
         }
-        SharedPreferences sharedPref = getSharedPreferences(MainActivity.SHARED_PREFS_NAME, MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPref.edit();
-        editor.putString(MainActivity.KEY_FIREBASE_ID, currentUser.getUid());
-        editor.apply();
     }
 
     private void loginUser() {
-        String email = etLoginEmail.getText().toString().trim();
-        String password = etLoginPassword.getText().toString().trim();
+        String email = Objects.requireNonNull(etLoginEmail.getText()).toString().trim();
+        String password = Objects.requireNonNull(etLoginPassword.getText()).toString().trim();
 
         if (TextUtils.isEmpty(email)) {
-            etLoginEmail.setError("Email is required.");
+            etLoginEmail.setError(getString(R.string.error_email_is_required));
             etLoginEmail.requestFocus();
             return;
         }
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            etLoginEmail.setError("Enter a valid email.");
+            etLoginEmail.setError(getString(R.string.error_enter_a_valid_email));
             etLoginEmail.requestFocus();
             return;
         }
         if (TextUtils.isEmpty(password)) {
-            etLoginPassword.setError("Password is required.");
+            etLoginPassword.setError(getString(R.string.error_password_is_required));
             etLoginPassword.requestFocus();
             return;
         }
@@ -119,7 +120,7 @@ public class LoginActivity extends AppCompatActivity {
                         updateUI(user);
                     } else {
                         Log.w(TAG, "signInWithEmail:failure", task.getException());
-                        Toast.makeText(LoginActivity.this, "Authentication failed: " + task.getException().getMessage(),
+                        Toast.makeText(LoginActivity.this, getString(R.string.authentication_failed) + task.getException().getMessage(),
                                 Toast.LENGTH_LONG).show();
                         updateUI(null);
                     }
@@ -129,13 +130,13 @@ public class LoginActivity extends AppCompatActivity {
     private void signInWithGoogle() {
         Intent signInIntent = mGoogleSignInClient.getSignInIntent();
         startActivityForResult(signInIntent, RC_SIGN_IN);
-        progressBarLogin.setVisibility(View.VISIBLE); // Показываем прогресс
+        progressBarLogin.setVisibility(View.VISIBLE);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        progressBarLogin.setVisibility(View.GONE); // Скрываем прогресс в любом случае
+        progressBarLogin.setVisibility(View.GONE);
 
         if (requestCode == RC_SIGN_IN) {
             Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
@@ -145,7 +146,7 @@ public class LoginActivity extends AppCompatActivity {
                 firebaseAuthWithGoogle(account.getIdToken());
             } catch (ApiException e) {
                 Log.w(TAG, "Google sign in failed", e);
-                Toast.makeText(this, "Google Sign In Failed: " + e.getStatusCode(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.google_auth_failed) + e.getStatusCode(), Toast.LENGTH_SHORT).show();
                 updateUI(null);
             }
         }
@@ -161,7 +162,7 @@ public class LoginActivity extends AppCompatActivity {
                         updateUI(user);
                     } else {
                         Log.w(TAG, "signInWithCredential(Google):failure", task.getException());
-                        Toast.makeText(LoginActivity.this, "Google Auth Failed: " + task.getException().getMessage(),
+                        Toast.makeText(LoginActivity.this, getString(R.string.google_auth_failed) + Objects.requireNonNull(task.getException()).getMessage(),
                                 Toast.LENGTH_SHORT).show();
                         updateUI(null);
                     }
@@ -171,19 +172,17 @@ public class LoginActivity extends AppCompatActivity {
 
     private void updateUI(FirebaseUser user) {
         if (user != null) {
-            // Сохраняем UID, если нужно (или просто используем user.getUid() где надо)
             SharedPreferences sharedPref = getSharedPreferences(MainActivity.SHARED_PREFS_NAME, MODE_PRIVATE);
             SharedPreferences.Editor editor = sharedPref.edit();
             editor.putString(MainActivity.KEY_FIREBASE_ID, user.getUid());
             editor.apply();
             Log.d(TAG, "User UID " + user.getUid() + " saved to SharedPreferences.");
 
-            Toast.makeText(this, "Logged in as " + user.getEmail(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.toast_logged_in) + user.getEmail(), Toast.LENGTH_SHORT).show();
             Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK); // Очищаем стек и создаем новый таск
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
-            finish(); // Закрываем LoginActivity
-        } else {
+            finish();
         }
     }
 }

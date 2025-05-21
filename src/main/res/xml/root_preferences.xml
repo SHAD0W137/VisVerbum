@@ -1,0 +1,38 @@
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="General Settings">
+
+        <ListPreference
+            app:key="app_language"
+            app:title="App Language"
+            app:summary="Select the display language for the app (Restart may be required)"
+            app:entries="@array/language_entries"
+            app:entryValues="@array/language_values"
+            app:defaultValue="en" />
+
+        <ListPreference
+            app:key="api_language"
+            app:title="Definition Language"
+            app:summary="Select the language for word definitions from API"
+            app:entries="@array/api_language_entries"
+            app:entryValues="@array/api_language_values"
+            app:defaultValue="en" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Word Definitions">
+        <SwitchPreferenceCompat
+            app:key="auto_save_words"
+            app:title="Auto-save Words"
+            app:summary="Automatically save words when their definition is viewed"
+            app:defaultValue="false" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Account">
+        <Preference
+            app:key="logout"
+            app:title="Logout"
+            app:summary="Sign out from your account" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

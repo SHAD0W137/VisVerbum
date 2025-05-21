@@ -6,7 +6,6 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
@@ -87,10 +86,7 @@ public class TextAccessibilityService extends AccessibilityService {
 
     private boolean canTryCopy() {
         long currentTime = System.currentTimeMillis();
-        if (currentTime - lastCopyAttemptTime > MIN_INTERVAL_BETWEEN_COPY_ATTEMPTS) {
-            return true;
-        }
-        return false;
+        return currentTime - lastCopyAttemptTime > MIN_INTERVAL_BETWEEN_COPY_ATTEMPTS;
     }
 
     private boolean nodeSupportsCopyAction(AccessibilityNodeInfo nodeInfo) {
@@ -109,7 +105,7 @@ public class TextAccessibilityService extends AccessibilityService {
     }
 
     private String performCopyAndGetText(AccessibilityNodeInfo nodeInfo) {
-        if (clipboardManager == null || nodeInfo == null || !nodeSupportsCopyAction(nodeInfo)) {
+        if (clipboardManager == null || !nodeSupportsCopyAction(nodeInfo)) {
             if (nodeInfo != null && !nodeSupportsCopyAction(nodeInfo)) {
                 Log.d(TAG, "Node " + nodeInfo.getClassName() + " does not support COPY action or is not suitable for copy.");
             }
@@ -123,16 +119,12 @@ public class TextAccessibilityService extends AccessibilityService {
 
         Log.d(TAG, "Attempting ACTION_COPY on node: " + nodeInfo.getClassName());
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            AccessibilityNodeInfo.AccessibilityAction actionCopy = AccessibilityNodeInfo.AccessibilityAction.ACTION_COPY;
-            if (actionCopy != null) {
-                copyActionSuccess = nodeInfo.performAction(actionCopy.getId(), null);
-            } else {
-                Log.e(TAG, "AccessibilityAction.ACTION_COPY is null! Cannot perform action.");
-                copyActionSuccess = false;
-            }
+        AccessibilityNodeInfo.AccessibilityAction actionCopy = AccessibilityNodeInfo.AccessibilityAction.ACTION_COPY;
+        if (actionCopy != null) {
+            copyActionSuccess = nodeInfo.performAction(actionCopy.getId(), null);
         } else {
-            copyActionSuccess = nodeInfo.performAction(AccessibilityNodeInfo.ACTION_COPY, null);
+            Log.e(TAG, "AccessibilityAction.ACTION_COPY is null! Cannot perform action.");
+            copyActionSuccess = false;
         }
 
         if (copyActionSuccess) {

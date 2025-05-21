@@ -42,11 +42,10 @@ public class HistoryFragment extends Fragment implements HistoryAdapter.OnWordIn
     private HistoryAdapter adapter;
     private List<HistoryAdapter.WordEntry> wordEntryList = new ArrayList<>();
     private Button editModeButton;
-    // private Button clearAllButton; // Если решите добавить
 
     private String userId;
     private DatabaseReference userWordsRef;
-    private ValueEventListener wordsValueEventListener; // Для прослушивания изменений в реальном времени
+    private ValueEventListener wordsValueEventListener;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -56,8 +55,7 @@ public class HistoryFragment extends Fragment implements HistoryAdapter.OnWordIn
 
         if (userId.isEmpty()) {
             Log.e(TAG, "User ID is empty. Cannot load or save words.");
-            Toast.makeText(getContext(), "User ID not found. History may not work.", Toast.LENGTH_LONG).show();
-            // Здесь можно предпринять действия, например, запросить логин или показать сообщение
+            Toast.makeText(getContext(), getString(R.string.user_id_not_found_history_may_not_work), Toast.LENGTH_LONG).show();
         } else {
             userWordsRef = FirebaseDatabase.getInstance().getReference("wordlist").child(userId);
         }
@@ -66,7 +64,7 @@ public class HistoryFragment extends Fragment implements HistoryAdapter.OnWordIn
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_history, container, false); // Используем новый layout
+        View view = inflater.inflate(R.layout.fragment_history, container, false);
 
         recyclerView = view.findViewById(R.id.rv_history);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -83,7 +81,6 @@ public class HistoryFragment extends Fragment implements HistoryAdapter.OnWordIn
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        // Начинаем слушать изменения только после создания View
         if (userWordsRef != null) {
             attachFirebaseListener();
         }
@@ -93,7 +90,6 @@ public class HistoryFragment extends Fragment implements HistoryAdapter.OnWordIn
         boolean newEditMode = !adapter.isInEditMode();
         adapter.setEditMode(newEditMode);
         editModeButton.setText(newEditMode ? "Done" : "Edit");
-        // clearAllButton.setVisibility(newEditMode ? View.VISIBLE : View.GONE); // Если есть кнопка очистки
     }
 
     private void attachFirebaseListener() {
@@ -109,19 +105,18 @@ public class HistoryFragment extends Fragment implements HistoryAdapter.OnWordIn
                             wordEntryList.add(new HistoryAdapter.WordEntry(key, word));
                         }
                     }
-                    Collections.reverse(wordEntryList); // Показать последние добавленные сверху
+                    Collections.reverse(wordEntryList);
                     Log.d(TAG, "Words loaded: " + wordEntryList.size());
                 } else {
                     Log.d(TAG, "No words found in Firebase for user: " + userId);
                 }
-                if (adapter != null) { // Убедимся, что адаптер уже создан
+                if (adapter != null) {
                     adapter.notifyDataSetChanged();
                 }
-                // Обновляем состояние кнопки Edit, если список пуст
                 if (editModeButton != null) {
                     editModeButton.setEnabled(!wordEntryList.isEmpty());
-                    if (wordEntryList.isEmpty() && adapter.isInEditMode()) { // Если список стал пустым в режиме редактирования
-                        toggleEditMode(); // Выйти из режима редактирования
+                    if (wordEntryList.isEmpty() && adapter.isInEditMode()) {
+                        toggleEditMode();
                     }
                 }
             }
@@ -129,7 +124,7 @@ public class HistoryFragment extends Fragment implements HistoryAdapter.OnWordIn
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
                 Log.e(TAG, "Firebase load cancelled: ", databaseError.toException());
-                Toast.makeText(getContext(), "Failed to load words.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), getString(R.string.failed_to_load_words), Toast.LENGTH_SHORT).show();
             }
         };
         userWordsRef.addValueEventListener(wordsValueEventListener);
@@ -139,31 +134,38 @@ public class HistoryFragment extends Fragment implements HistoryAdapter.OnWordIn
     @Override
     public void onDeleteClicked(HistoryAdapter.WordEntry wordEntry, int position) {
         if (userWordsRef == null || wordEntry.key == null) {
-            Toast.makeText(getContext(), "Error deleting word.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), getString(R.string.error_deleting_word), Toast.LENGTH_SHORT).show();
             return;
         }
-
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Delete Word")
-                .setMessage("Are you sure you want to delete \"" + wordEntry.word + "\"?")
-                .setPositiveButton("Delete", (dialog, which) -> {
-                    userWordsRef.child(wordEntry.key).removeValue()
-                            .addOnSuccessListener(aVoid -> {
-                                Log.d(TAG, "Word deleted: " + wordEntry.word);
-                                // Список обновится автоматически благодаря ValueEventListener
-                                // adapter.removeItem(position); // Это не нужно, если есть ValueEventListener
-                                Toast.makeText(getContext(), "\"" + wordEntry.word + "\" deleted.", Toast.LENGTH_SHORT).show();
-                            })
-                            .addOnFailureListener(e -> {
-                                Log.e(TAG, "Failed to delete word: " + wordEntry.word, e);
-                                Toast.makeText(getContext(), "Failed to delete.", Toast.LENGTH_SHORT).show();
-                            });
+        userWordsRef.child(wordEntry.key).removeValue()
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Word deleted: " + wordEntry.word);
+                    Toast.makeText(getContext(), "\"" + wordEntry.word + getString(R.string.deleted), Toast.LENGTH_SHORT).show();
                 })
-                .setNegativeButton("Cancel", null)
-                .show();
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to delete word: " + wordEntry.word, e);
+                    Toast.makeText(getContext(), getString(R.string.failed_to_delete), Toast.LENGTH_SHORT).show();
+                });
     }
 
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (userWordsRef != null && wordsValueEventListener != null) {
+            userWordsRef.removeEventListener(wordsValueEventListener);
+            Log.d(TAG, "Firebase listener removed.");
+        }
+    }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        recyclerView = null;
+        adapter = null;
+        editModeButton = null;
+    }
+
+    // Could be implemented later
     private void confirmClearAllWords() {
         if (userWordsRef == null) return;
         if (wordEntryList.isEmpty()) {
@@ -178,9 +180,8 @@ public class HistoryFragment extends Fragment implements HistoryAdapter.OnWordIn
                     userWordsRef.removeValue()
                             .addOnSuccessListener(aVoid -> {
                                 Log.d(TAG, "All words cleared for user: " + userId);
-                                // Список обновится автоматически благодаря ValueEventListener
                                 Toast.makeText(getContext(), "All words cleared.", Toast.LENGTH_SHORT).show();
-                                if (adapter.isInEditMode()) { // Выйти из режима редактирования
+                                if (adapter.isInEditMode()) {
                                     toggleEditMode();
                                 }
                             })
@@ -191,25 +192,5 @@ public class HistoryFragment extends Fragment implements HistoryAdapter.OnWordIn
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
-    }
-
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        // Отсоединяем слушатель, когда фрагмент не виден, чтобы избежать утечек и лишних обновлений
-        if (userWordsRef != null && wordsValueEventListener != null) {
-            userWordsRef.removeEventListener(wordsValueEventListener);
-            Log.d(TAG, "Firebase listener removed.");
-        }
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        // recyclerView = null; // binding = null в вашем коде это делает для ViewBinding
-        // adapter = null;
-        // editModeButton = null;
-        // wordEntryList.clear(); // Можно очистить, если не хотите хранить при пересоздании View
     }
 }

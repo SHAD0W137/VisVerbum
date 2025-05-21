@@ -28,7 +28,6 @@ public class FloatingButtonService extends Service {
 
     private WindowManager windowManager;
     private View floatingView;
-    private ImageButton actionButton;
 
     private static final String CHANNEL_ID = "FloatingButtonChannel";
     private static final int NOTIFICATION_ID = 123;
@@ -54,24 +53,14 @@ public class FloatingButtonService extends Service {
         }
 
         floatingView = inflater.inflate(R.layout.floating_button_layout, null);
-        actionButton = floatingView.findViewById(R.id.floating_button);
+        ImageButton actionButton = floatingView.findViewById(R.id.floating_button);
 
         if (actionButton == null) {
             stopSelf();
             return;
         }
 
-        int layoutFlag;
-        layoutFlag = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
-
-        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                layoutFlag,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-                        WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
-                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-                PixelFormat.TRANSLUCENT);
+        WindowManager.LayoutParams params = getLayoutParams();
 
         params.gravity = Gravity.BOTTOM | Gravity.END;
         params.x = 30;
@@ -91,13 +80,27 @@ public class FloatingButtonService extends Service {
                 definitionIntent.putExtra("selectedWord", currentSelectedWordFromAccessibility);
                 try {
                     startService(definitionIntent);
-                } catch (Exception e) {
+                } catch (Exception ignored) {
                 }
             }
         });
 
         LocalBroadcastManager.getInstance(this).registerReceiver(textSelectedReceiver,
                 new IntentFilter(TextAccessibilityService.ACTION_TEXT_SELECTED));
+    }
+
+    private static WindowManager.LayoutParams getLayoutParams() {
+        int layoutFlag;
+        layoutFlag = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+
+        return new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                layoutFlag,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                        WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                PixelFormat.TRANSLUCENT);
     }
 
     private void startMyOwnForeground() {
@@ -115,8 +118,8 @@ public class FloatingButtonService extends Service {
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID);
         Notification notification = notificationBuilder.setOngoing(true)
                 .setSmallIcon(R.drawable.logo)
-                .setContentTitle("Press to open the app")
-                .setContentText("Select the word and use long-click toolbar or floating button to get definition")
+                .setContentTitle(getString(R.string.notif_title))
+                .setContentText(getString(R.string.notif_description))
                 .setPriority(NotificationManager.IMPORTANCE_MIN)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setContentIntent(pendingIntent)

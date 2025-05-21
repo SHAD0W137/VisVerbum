@@ -1,10 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp"
     tools:context=".ui.wordtest.WordtestFragment">
 
+    <TextView
+        android:id="@+id/tvCurrentWord"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/wordtest_filler"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="32dp"
+        android:gravity="center"
+        android:minHeight="100dp"/>
+
+    <Button
+        android:id="@+id/btnNextWord"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/wordtest_next_word"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btnShowDefinition"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/wordtest_show_definition"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tvNoWordsMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/wordtest_nothing_found"
+        android:textSize="16sp"
+        android:visibility="gone"
+        android:layout_marginTop="24dp"/>
 
 </LinearLayout>

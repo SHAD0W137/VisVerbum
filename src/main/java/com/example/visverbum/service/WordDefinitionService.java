@@ -31,13 +31,18 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.preference.PreferenceManager;
 
 import com.example.visverbum.MainActivity;
-import com.example.visverbum.R; // Убедитесь, что R импортируется из вашего пакета
+import com.example.visverbum.R;
+import com.example.visverbum.ui.options.OptionsFragment;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -48,6 +53,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -57,16 +63,15 @@ import java.util.concurrent.Executors;
 
 public class WordDefinitionService extends Service {
     private static final String TAG = "WordDefinitionService";
-
     private WindowManager windowManager;
     private View definitionView;
     private WindowManager.LayoutParams params;
-
+    private String currentApiLanguage = "en";
+    private boolean autoSaveWordsEnabled = false;
     public String selectedWordGlobal;
     static String userId;
-
-    private Map<String, List<String>> definitionsByPos = new HashMap<>();
-    private List<String> partsOfSpeechOrder = new ArrayList<>();
+    private final Map<String, List<String>> definitionsByPos = new HashMap<>();
+    private final List<String> partsOfSpeechOrder = new ArrayList<>();
 
     private Handler uiUpdateHandler;
     private Handler errorHandler;
@@ -83,7 +88,7 @@ public class WordDefinitionService extends Service {
     private TextView titleTextView;
     private Button currentlySelectedPosButton = null;
 
-    @SuppressLint("ClickableViewAccessibility") // Для OnTouchListener на titleBar
+    @SuppressLint("ClickableViewAccessibility") // for OnTouchListener on titleBar
     @Override
     public void onCreate() {
         super.onCreate();
@@ -97,6 +102,11 @@ public class WordDefinitionService extends Service {
         } else {
             userId = "";
         }
+
+        SharedPreferences appPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        currentApiLanguage = appPreferences.getString(OptionsFragment.KEY_API_LANGUAGE, "en");
+        autoSaveWordsEnabled = appPreferences.getBoolean(OptionsFragment.KEY_AUTO_SAVE_WORDS, false);
+        Log.d(TAG, "Settings loaded - API Lang: " + currentApiLanguage + ", Auto-save: " + autoSaveWordsEnabled);
 
         uiUpdateHandler = new Handler(Looper.getMainLooper()) {
             @Override
@@ -114,9 +124,9 @@ public class WordDefinitionService extends Service {
                 super.handleMessage(msg);
                 if (msg.what == 1 && definitionView != null) {
                     if (definitionTextView != null && selectedWordGlobal != null) {
-                        definitionTextView.setText("No definition found for \"" + selectedWordGlobal + "\" or network error.");
+                        definitionTextView.setText(getString(R.string.no_definition_found_for) + selectedWordGlobal + getString(R.string.or_network_error));
                     } else if (definitionTextView != null) {
-                        definitionTextView.setText("An error occurred or word is invalid.");
+                        definitionTextView.setText(R.string.error_or_word_is_invalid);
                     }
                     if (posTabsScrollView != null) {
                         posTabsScrollView.setVisibility(View.GONE);
@@ -162,7 +172,7 @@ public class WordDefinitionService extends Service {
             if (selectedWordGlobal != null && !selectedWordGlobal.isEmpty()) {
                 saveWordToFirebase(selectedWordGlobal);
             } else {
-                Toast.makeText(this, "No word to save", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.no_word_to_save), Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -171,7 +181,7 @@ public class WordDefinitionService extends Service {
             if (selectedWordGlobal != null && !selectedWordGlobal.isEmpty()) {
                 searchWordInGoogle(selectedWordGlobal);
             } else {
-                Toast.makeText(this, "No word to search", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.no_word_to_search), Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -204,6 +214,12 @@ public class WordDefinitionService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "onStartCommand received");
+
+        SharedPreferences appPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        currentApiLanguage = appPreferences.getString(OptionsFragment.KEY_API_LANGUAGE, "en");
+        autoSaveWordsEnabled = appPreferences.getBoolean(OptionsFragment.KEY_AUTO_SAVE_WORDS, false);
+        Log.d(TAG, "Updated settings - API Lang: " + currentApiLanguage + ", Auto-save: " + autoSaveWordsEnabled);
+
         if (definitionView == null) {
             Log.e(TAG, "definitionView is null in onStartCommand. Service might have been improperly restarted or view removed.");
             stopSelf();
@@ -220,7 +236,7 @@ public class WordDefinitionService extends Service {
                     titleTextView.setText(selectedWordGlobal.toUpperCase());
                 }
                 if (definitionTextView != null) {
-                    definitionTextView.setText("Loading definition...");
+                    definitionTextView.setText(R.string.loading_definition);
                 }
                 if (posTabsContainer != null) {
                     posTabsContainer.removeAllViews();
@@ -234,7 +250,7 @@ public class WordDefinitionService extends Service {
 
                 getDefinition(selectedWordGlobal);
             } else {
-                Toast.makeText(this, "No valid word to define.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.no_valid_word_to_define), Toast.LENGTH_SHORT).show();
                 removeViewAndStopService();
             }
         } else {
@@ -249,9 +265,10 @@ public class WordDefinitionService extends Service {
             return null;
         }
         String cleanedWord = rawWord.trim().replaceAll("^[\\p{Punct}\\s]+|[\\p{Punct}\\s]+$", "");
+
         String[] words = cleanedWord.split("\\s+");
         if (words.length > 0 && !words[0].isEmpty()) {
-            return words[0].replaceAll("[^a-zA-Z0-9-]", "");
+            return words[0].replaceAll("[^\\p{L}\\p{N}-]", "");
         }
         return null;
     }
@@ -310,7 +327,7 @@ public class WordDefinitionService extends Service {
         try {
             activeColor = ContextCompat.getColor(this, R.color.red_main);
         } catch (Resources.NotFoundException e) {
-            activeColor = Color.RED; // Запасной цвет
+            activeColor = Color.RED;
         }
         selectedButton.setTextColor(activeColor);
         selectedButton.setTypeface(null, Typeface.BOLD);
@@ -331,26 +348,27 @@ public class WordDefinitionService extends Service {
             }
             definitionTextView.setText(sb.toString());
         } else {
-            definitionTextView.setText("No definitions available for this part of speech.");
+            definitionTextView.setText(R.string.no_definitions_for_this_part_of_speech);
         }
     }
 
     private void getDefinition(final String word) {
         executorService.execute(() -> {
             try {
-                String url = "https://api.dictionaryapi.dev/api/v2/entries/en/" + Uri.encode(word); // Кодируем слово для URL
+                String url = "https://api.dictionaryapi.dev/api/v2/entries/" + Uri.encode(currentApiLanguage) + "/" + Uri.encode(word);
+                Log.d(TAG, "Tried this request: " + url);
                 URL obj = new URL(url);
                 System.setProperty("java.net.preferIPv4Stack", "true");
                 HttpURLConnection con = (HttpURLConnection) obj.openConnection();
                 con.setRequestMethod("GET");
-                con.setConnectTimeout(10000); // 10 секунд
-                con.setReadTimeout(10000);    // 10 секунд
+                con.setConnectTimeout(5000);
+                con.setReadTimeout(5000);
 
                 int responseCode = con.getResponseCode();
                 Log.d(TAG, "API for \"" + word + "\" - Response Code: " + responseCode);
 
                 if (responseCode == HttpURLConnection.HTTP_OK) {
-                    BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+                    BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8));
                     String inputLine;
                     StringBuilder response = new StringBuilder();
                     while ((inputLine = in.readLine()) != null) {
@@ -369,7 +387,7 @@ public class WordDefinitionService extends Service {
 
                         for (int i = 0; i < meanings.length(); i++) {
                             JSONObject meaning = meanings.getJSONObject(i);
-                            String partOfSpeech = meaning.optString("partOfSpeech", "Other"); // "Other" если нет или пустая
+                            String partOfSpeech = meaning.optString("partOfSpeech", "Other");
                             if (partOfSpeech.isEmpty()) partOfSpeech = "Other";
 
                             JSONArray definitionsArray = meaning.getJSONArray("definitions");
@@ -382,12 +400,16 @@ public class WordDefinitionService extends Service {
                             for (int j = 0; j < definitionsArray.length(); j++) {
                                 JSONObject definitionObj = definitionsArray.getJSONObject(j);
                                 String defText = definitionObj.getString("definition");
+                                assert currentDefinitions != null;
                                 currentDefinitions.add(defText);
                             }
                             definitionsByPos.put(partOfSpeech, currentDefinitions);
                         }
 
                         if (!definitionsByPos.isEmpty()) {
+                            if(autoSaveWordsEnabled && selectedWordGlobal != null && !selectedWordGlobal.isEmpty()){
+                                saveWordToFirebase(selectedWordGlobal);
+                            }
                             uiUpdateHandler.sendEmptyMessage(1);
                         } else {
                             Log.w(TAG, "No 'meanings' or 'definitions' found in JSON for \"" + word + "\"");
@@ -414,33 +436,68 @@ public class WordDefinitionService extends Service {
         });
     }
 
-    private void saveWordToFirebase(String word) {
+    private void saveWordToFirebase(final String wordToSave) {
         if (userId == null || userId.isEmpty()) {
-            Toast.makeText(this, "User ID not available. Cannot save word.", Toast.LENGTH_LONG).show();
-            SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("FirebaseId", Context.MODE_PRIVATE);
-            userId = sharedPref.getString("FirebaseId", "");
-            if (userId == null || userId.isEmpty()){
-                Log.e(TAG, "Failed to retrieve User ID for Firebase saving.");
+            SharedPreferences sharedPref = getApplicationContext().getSharedPreferences(MainActivity.SHARED_PREFS_NAME, Context.MODE_PRIVATE);
+            String tempUserId = sharedPref.getString(MainActivity.KEY_FIREBASE_ID, "");
+            if (tempUserId.isEmpty()) {
+                Log.e(TAG, "User ID is still empty. Cannot save/toggle word.");
+                Toast.makeText(this, getString(R.string.cannot_save_word_user_not_identified), Toast.LENGTH_LONG).show();
                 return;
             }
+            userId = tempUserId;
         }
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
-        DatabaseReference myRef = database.getReference("wordlist").child(userId);
-        String key = myRef.push().getKey();
-        if (key != null) {
-            myRef.child(key).setValue(word)
-                    .addOnSuccessListener(aVoid -> {
-                        Log.d(TAG, "Word \"" + word + "\" saved to Firebase for user " + userId);
-                        Toast.makeText(WordDefinitionService.this, "\"" + word + "\" saved!", Toast.LENGTH_SHORT).show();
-                    })
-                    .addOnFailureListener(e -> {
-                        Log.e(TAG, "Failed to save word \"" + word + "\" to Firebase for user " + userId, e);
-                        Toast.makeText(WordDefinitionService.this, "Failed to save: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                    });
-        } else {
-            Log.e(TAG, "Failed to generate Firebase key for word: " + word);
-            Toast.makeText(WordDefinitionService.this, "Failed to generate key for saving.", Toast.LENGTH_SHORT).show();
-        }
+
+        final DatabaseReference userWordsRef = FirebaseDatabase.getInstance().getReference("wordlist").child(userId);
+
+        userWordsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                String existingKey = null;
+                boolean wordExists = false;
+
+                if (dataSnapshot.exists()) {
+                    for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                        String currentWordInDb = snapshot.getValue(String.class);
+                        if (currentWordInDb != null && currentWordInDb.equalsIgnoreCase(wordToSave)) {
+                            existingKey = snapshot.getKey();
+                            wordExists = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (wordExists && existingKey != null) {
+                    userWordsRef.child(existingKey).removeValue()
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d(TAG, "Word \"" + wordToSave + "\" removed from Firebase for user " + userId);
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "Failed to remove word \"" + wordToSave + "\" from Firebase for user " + userId, e);
+                            });
+                }
+                String newKey = userWordsRef.push().getKey();
+                if (newKey != null) {
+                    userWordsRef.child(newKey).setValue(wordToSave)
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d(TAG, "Word \"" + wordToSave + "\" saved to Firebase for user " + userId);
+                                Toast.makeText(WordDefinitionService.this, "\"" + wordToSave + getString(R.string.saved), Toast.LENGTH_SHORT).show();
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "Failed to save new word \"" + wordToSave + "\" to Firebase for user " + userId, e);
+                                Toast.makeText(WordDefinitionService.this, getString(R.string.failed_to_save) + e.getMessage(), Toast.LENGTH_LONG).show();
+                            });
+                } else {
+                    Log.e(TAG, "Failed to generate Firebase key for new word: " + wordToSave);
+                    Toast.makeText(WordDefinitionService.this, getString(R.string.error_saving_word), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                Log.e(TAG, "Firebase read for checking word existence failed: ", databaseError.toException());
+            }
+        });
     }
 
     private void searchWordInGoogle(String word) {
@@ -452,10 +509,10 @@ public class WordDefinitionService extends Service {
             Log.d(TAG, "Opened Google search for: " + word);
         } catch (ActivityNotFoundException e) {
             Log.e(TAG, "ActivityNotFoundException for Google search: " + e.getMessage());
-            Toast.makeText(this, "No browser found to open Google search.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.no_browser_found), Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Log.e(TAG, "Exception during Google search: " + e.getMessage());
-            Toast.makeText(this, "Could not open Google search.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.could_not_open_google_search), Toast.LENGTH_LONG).show();
         }
     }
 

@@ -37,6 +37,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.preference:preference:1.2.1")
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-database")
     implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
