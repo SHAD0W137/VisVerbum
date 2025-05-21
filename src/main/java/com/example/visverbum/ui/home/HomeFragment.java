@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -17,6 +18,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
@@ -26,6 +28,7 @@ import com.example.visverbum.service.FloatingButtonService;
 import com.example.visverbum.service.TextAccessibilityService;
 
 import java.util.List;
+import java.util.Objects;
 
 public class HomeFragment extends Fragment {
     private static final String TAG = "HomeFragment";
@@ -34,11 +37,15 @@ public class HomeFragment extends Fragment {
     private SharedPreferences sharedPref;
     private Button mainButton;
     private FragmentHomeBinding binding;
+    ComponentName componentName;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         sharedPref = requireContext().getSharedPreferences("VisVerbumPrefs", Context.MODE_PRIVATE);
+
+        componentName = new ComponentName("com.example.visverbum",
+                "com.example.visverbum.service.ToolbarActivity");
     }
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -56,7 +63,7 @@ public class HomeFragment extends Fragment {
 
     private void toggleServices() {
         boolean shouldBeActive = !sharedPref.getBoolean("FLOATING_SERVICE_USER_ACTIVE", false);
-
+        PackageManager packageManager = requireActivity().getPackageManager();
         if (shouldBeActive) {
             if (!checkOverlayPermission()) {
                 requestOverlayPermission();
@@ -68,10 +75,20 @@ public class HomeFragment extends Fragment {
                 startActivity(intent);
                 return;
             }
+            if (!NotificationManagerCompat.from(requireContext()).areNotificationsEnabled()) {
+                Toast.makeText(requireContext(), "Пожалуйста, включите уведомления для VisVerbum", Toast.LENGTH_LONG).show();
+                Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, requireContext().getPackageName());
+                startActivity(intent);
+                return;
+            }
+
             startFloatingService();
+            packageManager.setComponentEnabledSetting(componentName, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
             sharedPref.edit().putBoolean("FLOATING_SERVICE_USER_ACTIVE", true).apply();
         } else {
             stopFloatingService();
+            packageManager.setComponentEnabledSetting(componentName, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
             sharedPref.edit().putBoolean("FLOATING_SERVICE_USER_ACTIVE", false).apply();
         }
         updateButtonState();
@@ -79,8 +96,9 @@ public class HomeFragment extends Fragment {
 
     private void updateButtonState() {
         if (sharedPref.getBoolean("FLOATING_SERVICE_USER_ACTIVE", false) &&
-                isAccessibilityServiceEnabled(requireContext(), TextAccessibilityService.class) && // Дополнительная проверка
-                checkOverlayPermission()) {
+                isAccessibilityServiceEnabled(requireContext(), TextAccessibilityService.class) &&
+                checkOverlayPermission() &&
+                NotificationManagerCompat.from(requireContext()).areNotificationsEnabled()) {
             mainButton.setText("VISVERBUM IS ACTIVE");
         } else {
             mainButton.setText("VISVERBUM IS INACTIVE");

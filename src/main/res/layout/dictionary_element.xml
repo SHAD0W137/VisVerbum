@@ -15,6 +15,14 @@
         android:layout_weight="1"
         android:textSize="20sp"/>
     <Button
+        android:id="@+id/element_delete"
+        android:gravity="center"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:layout_weight="0.2"
+        android:text="X"/>
+    <Button
         android:id="@+id/element_define"
         android:gravity="center"
         android:layout_width="wrap_content"

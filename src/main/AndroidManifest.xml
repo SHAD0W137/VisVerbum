@@ -2,11 +2,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
         android:allowBackup="true"
@@ -18,49 +20,62 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.VisVerbum"
         tools:targetApi="31">
-
-        <service
-            android:name=".service.WordDefinitionService"
-            android:enabled="true"
-            android:exported="true">
-        </service>
-
-        <service
-            android:name=".service.TextAccessibilityService"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-            android:label="@string/app_name"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/accessibility_service_config" />
-        </service>
-
-        <service
-            android:name=".service.FloatingButtonService"
-            android:enabled="true"
-            android:exported="false" />
-
         <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:parentActivityName=".service.ToolbarActivity"
-            android:label="@string/app_name">
+            android:name=".auth.RegisterActivity"
+            android:exported="false" />
+        <activity
+            android:name=".auth.LoginActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
+        <service
+            android:name=".service.WordDefinitionService"
+            android:enabled="true"
+            android:exported="true" />
+        <service
+            android:name=".service.TextAccessibilityService"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+        <service
+            android:name=".service.FloatingButtonService"
+            android:foregroundServiceType="specialUse"
+            android:enabled="true"
+            android:exported="false">
+            <property
+                android:name="android:foregroundServiceType"
+                android:value="specialUse"/>
+        </service>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:parentActivityName=".service.ToolbarActivity">
+
+        </activity>
         <activity
             android:name=".service.ToolbarActivity"
             android:exported="true"
             android:label="@string/define_toolbar">
             <intent-filter>
                 <action android:name="android.intent.action.PROCESS_TEXT" />
+
                 <category android:name="android.intent.category.DEFAULT" />
+
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
